@@ -467,57 +467,65 @@ function updateLegend(colorScale, radiusScale, values) {
   nd.append("div").attr("class", "legend-swatch no-data-swatch");
   nd.append("span").attr("class", "legend-label").text("No data");
 
-  // Size legend — nested concentric circles, all sharing the same bottom
-  // baseline (classic proportional-symbol-map convention). This signals
-  // "continuous sqrt scale with these reference points" rather than a
-  // 3-bin discrete encoding, which is what separate side-by-side circles
-  // would imply.
+  // Size legend — horizontal row of reference circles sharing a bottom
+  // baseline. More samples (six) and tight spacing → the eye reads the
+  // progression as a continuous sqrt gradient rather than a few discrete
+  // bins. Values chosen so that radii increase roughly linearly.
   const sizeLeg = leg.append("div").attr("class", "size-legend");
   sizeLeg.append("div").attr("class", "size-legend-title").text("Circle area = value");
 
   const ref = state.radiusRef[state.metric];
-  // Five reference points spanning small → large. The top of the biggest
-  // circle defines the SVG height; everything else is stacked inside it.
-  const samples = [ref, ref * 0.5, ref * 0.2, ref * 0.05];
+  // Radii step linearly from small → RADIUS_MAX. Because r = sqrt(v/ref)*Rmax,
+  // the corresponding v values grow quadratically — i.e. (i/N)^2 * ref.
+  // This produces a visually smooth sequence (linear radius growth) rather
+  // than the lumpy doubling you'd get from a geometric series on v.
+  const nSamples = 6;
+  const samples = [];
+  for (let i = 1; i <= nSamples; i++) {
+    samples.push(Math.pow(i / nSamples, 2) * ref);
+  }
 
-  const pad = 4;
-  const labelX = RADIUS_MAX * 2 + 14;   // right of the biggest circle + gap
-  const svgW = labelX + 60;
-  const svgH = RADIUS_MAX * 2 + pad * 2;
-  const cx = RADIUS_MAX + pad;
-  const baseY = svgH - pad;             // shared bottom baseline
+  const padX = 4;
+  const padTop = 2;
+  const padBottom = 12;   // room for labels below baseline
+  const gap = 3;           // between neighboring circles
+
+  // Compute total width = sum of diameters + gaps + side padding.
+  let totalDia = 0;
+  samples.forEach(v => { totalDia += 2 * radiusScale(v); });
+  const svgW = padX * 2 + totalDia + gap * (nSamples - 1);
+  const svgH = padTop + RADIUS_MAX * 2 + padBottom;
+  const baseY = padTop + RADIUS_MAX * 2;
 
   const svg = sizeLeg.append("svg")
     .attr("class", "size-legend-svg")
     .attr("width", svgW)
     .attr("height", svgH);
 
-  // Circles — draw largest first so smaller ones sit visually on top.
+  // Draw circles left → right, bottom-aligned to baseY.
+  let cursor = padX;
+  const circleCenters = [];
   samples.forEach(v => {
     const r = radiusScale(v);
+    const cx = cursor + r;
+    circleCenters.push(cx);
     svg.append("circle")
       .attr("class", "size-legend-ref")
       .attr("cx", cx)
       .attr("cy", baseY - r)
       .attr("r", r);
+    cursor += 2 * r + gap;
   });
 
-  // Leader lines + labels — one per sample, positioned at the top of each
-  // circle (its cy - r, which equals baseY - 2r).
-  samples.forEach(v => {
-    const r = radiusScale(v);
-    const topY = baseY - 2 * r;
-    svg.append("line")
-      .attr("class", "size-legend-leader")
-      .attr("x1", cx)
-      .attr("x2", labelX - 3)
-      .attr("y1", topY)
-      .attr("y2", topY);
+  // Labels below — show every other circle (1st, 3rd, 5th) to reduce clutter
+  // while still giving the viewer 3 anchor values along the continuous scale.
+  samples.forEach((v, i) => {
+    if (i % 2 !== 0) return;
     svg.append("text")
       .attr("class", "size-legend-label")
-      .attr("x", labelX)
-      .attr("y", topY)
-      .attr("dy", "0.32em")
+      .attr("x", circleCenters[i])
+      .attr("y", baseY + padBottom - 2)
+      .attr("text-anchor", "middle")
       .text(fmtShort(v));
   });
 }
