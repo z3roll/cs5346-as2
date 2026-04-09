@@ -29,30 +29,32 @@
       </div>
 
       <div class="topbar-controls">
-        <!-- Metric toggle -->
+        <!-- Metric toggle — fixes Bias 1 (raw counts hide per-capita severity) -->
         <div class="ctrl">
           <span class="ctrl-label">Metric</span>
           <div class="seg-toggle" id="metric-toggle">
-            <button class="seg active" data-value="pm">Per Capita</button>
-            <button class="seg" data-value="raw">Raw Counts</button>
+            <button class="seg active" data-value="pm">Per 100k</button>
+            <button class="seg" data-value="raw">Raw</button>
           </div>
         </div>
 
-        <!-- Bin toggle -->
+        <!-- Bin toggle — fixes Bias 3 (fixed log bins compress variation) -->
         <div class="ctrl">
           <span class="ctrl-label">Bins</span>
           <div class="seg-toggle" id="bin-toggle">
             <button class="seg active" data-value="quantile">Quantile</button>
-            <button class="seg" data-value="equal">Equal Interval</button>
+            <button class="seg" data-value="jenks">Jenks</button>
+            <button class="seg" data-value="equal">Equal</button>
+            <button class="seg" data-value="owidlog">OWID Log</button>
           </div>
         </div>
       </div>
 
       <!-- Remediation badges -->
       <div class="topbar-badges">
-        <span class="badge"><i>01</i> Per-capita default</span>
-        <span class="badge"><i>02</i> Equal Earth projection</span>
-        <span class="badge"><i>03</i> Quantile color bins</span>
+        <span class="badge"><i>01</i> Per-100k metric</span>
+        <span class="badge"><i>02</i> Proportional symbol map</span>
+        <span class="badge"><i>03</i> Adjustable color bins</span>
       </div>
     </header>
 

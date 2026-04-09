@@ -245,24 +245,33 @@ input[type="range"]::-moz-range-thumb{
 
 .map-frame svg{display:block;width:100%;height:100%}
 
-/* Country paths */
+/* Ghost country layer — outlines only, no data encoding. Phase-1 Bias 2
+   (area-size dominance) is remediated by moving all data to circles. */
 .country{
-  stroke:#000;
-  stroke-width:.5;
+  fill:rgba(255,255,255,.018);
+  stroke:rgba(255,255,255,.10);
+  stroke-width:.4;
   stroke-linejoin:round;
   vector-effect:non-scaling-stroke;
-  transition:fill .2s ease;
+  pointer-events:none;
+}
+
+/* Proportional symbols — the actual data layer */
+.symbol-layer circle.symbol{
+  stroke:rgba(255,255,255,.55);
+  stroke-width:.5;
+  vector-effect:non-scaling-stroke;
+  fill-opacity:.78;
+  transition:stroke .15s ease, stroke-width .15s ease, fill-opacity .15s ease;
   cursor:pointer;
 }
-.country:hover{
-  stroke:var(--amber);stroke-width:1.4;
-  filter:brightness(1.3) drop-shadow(0 0 4px var(--amber-glow));
+.symbol-layer circle.symbol:hover,
+.symbol-layer circle.symbol.highlighted{
+  stroke:var(--amber);
+  stroke-width:1.6;
+  fill-opacity:1;
+  filter:drop-shadow(0 0 6px var(--amber-glow));
 }
-.country.highlighted{
-  stroke:var(--cyan);stroke-width:1.2;
-  filter:brightness(1.2);
-}
-.no-data{fill:url(#no-data-pattern)}
 
 .graticule{
   fill:none;stroke:rgba(255,255,255,.04);
@@ -306,6 +315,32 @@ input[type="range"]::-moz-range-thumb{
 .legend-label{
   font-family:var(--f-mono);font-size:.62rem;
   color:var(--text-dim);font-variant-numeric:tabular-nums;
+}
+
+/* Size legend — reference circles */
+.size-legend{
+  margin-top:var(--sp-3);padding-top:var(--sp-2);
+  border-top:1px solid var(--border);
+}
+.size-legend-title{
+  font-family:var(--f-mono);font-size:.58rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-dim);
+  margin-bottom:var(--sp-2);
+}
+.size-legend-items{
+  display:flex;align-items:flex-end;gap:var(--sp-3);
+}
+.size-legend-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.size-legend-item svg{display:block}
+.size-legend-item span{
+  font-family:var(--f-mono);font-size:.56rem;
+  color:var(--text-dim);font-variant-numeric:tabular-nums;
+}
+.size-legend-ref{
+  fill:none;stroke:var(--text-mid);stroke-width:.9;
 }
 
 /* Bin info */
@@ -383,16 +418,39 @@ input[type="range"]::-moz-range-thumb{
 .panel-list::-webkit-scrollbar-track{background:transparent}
 .panel-list::-webkit-scrollbar-thumb{background:var(--surface-hi);border-radius:3px}
 
-/* Individual row */
+/* Individual row — positioning context for the absolute bar layer */
 .rank-row{
+  position:relative;
   display:flex;align-items:center;gap:var(--sp-2);
-  padding:4px var(--sp-4);
+  padding:5px var(--sp-4);
   cursor:pointer;
   transition:background .12s ease;
   border-bottom:1px solid rgba(255,255,255,.02);
+  overflow:hidden;
+  isolation:isolate; /* new stacking context so the bar's z-index stays local */
 }
 .rank-row:hover{background:var(--surface-up)}
 .rank-row.highlighted{background:var(--amber-dim)}
+
+/* Background bar — OWID-style full-row indicator behind the text */
+.rank-bar{
+  position:absolute;
+  top:0;left:0;bottom:0;
+  z-index:0;
+  opacity:.42;
+  pointer-events:none;
+  transition:width .35s ease, background-color .35s ease, opacity .2s ease;
+}
+.rank-row:hover .rank-bar{opacity:.58}
+.rank-row.highlighted .rank-bar{opacity:.72}
+
+/* Row content sits above the bar */
+.rank-row > .rank-num,
+.rank-row > .rank-name,
+.rank-row > .rank-val{
+  position:relative;
+  z-index:1;
+}
 
 .rank-num{
   font-family:var(--f-mono);font-size:.6rem;font-weight:500;
@@ -400,26 +458,15 @@ input[type="range"]::-moz-range-thumb{
 }
 
 .rank-name{
-  font-size:.7rem;font-weight:500;color:var(--text);
+  font-size:.72rem;font-weight:500;color:var(--text);
   flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
-.rank-bar-wrap{
-  width:50px;height:6px;
-  background:var(--surface-hi);border-radius:3px;
-  overflow:hidden;flex-shrink:0;
-}
-
-.rank-bar{
-  height:100%;border-radius:3px;
-  transition:width .3s ease;
-}
-
 .rank-val{
-  font-family:var(--f-mono);font-size:.62rem;font-weight:500;
+  font-family:var(--f-mono);font-size:.64rem;font-weight:500;
   color:var(--text-mid);
-  min-width:52px;text-align:right;flex-shrink:0;
+  min-width:62px;text-align:right;flex-shrink:0;
   font-variant-numeric:tabular-nums;
 }
 
