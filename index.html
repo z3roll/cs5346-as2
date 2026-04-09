@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="author" content="z3roll" />
+  <title>COVID-19 Weekly Cases: A Bias-Aware Redesign</title>
+
+  <!-- Typography: Syne (geometric display) + IBM Plex Mono (data) + DM Sans (UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Scan-line overlay for CRT atmosphere -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <div id="app">
+    <!-- Top bar: masthead + controls -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="logo">COVID-19 <span class="logo-thin">Weekly Cases</span></h1>
+        <span class="logo-tag">BIAS-AWARE REDESIGN</span>
+      </div>
+
+      <div class="topbar-controls">
+        <!-- Metric toggle -->
+        <div class="ctrl">
+          <span class="ctrl-label">Metric</span>
+          <div class="seg-toggle" id="metric-toggle">
+            <button class="seg active" data-value="pm">Per Capita</button>
+            <button class="seg" data-value="raw">Raw Counts</button>
+          </div>
+        </div>
+
+        <!-- Bin toggle -->
+        <div class="ctrl">
+          <span class="ctrl-label">Bins</span>
+          <div class="seg-toggle" id="bin-toggle">
+            <button class="seg active" data-value="quantile">Quantile</button>
+            <button class="seg" data-value="equal">Equal Interval</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remediation badges -->
+      <div class="topbar-badges">
+        <span class="badge"><i>01</i> Per-capita default</span>
+        <span class="badge"><i>02</i> Equal Earth projection</span>
+        <span class="badge"><i>03</i> Quantile color bins</span>
+      </div>
+    </header>
+
+    <!-- Main content: map + ranked list -->
+    <div class="main-split">
+      <!-- LEFT: Map -->
+      <div class="map-col">
+        <!-- Timeline strip -->
+        <div class="timeline-strip">
+          <button class="play-btn" id="play-btn" aria-label="Play / Pause">
+            <svg class="ico-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 21,12 7,20"/></svg>
+            <svg class="ico-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="4" height="16"/><rect x="15" y="4" width="4" height="16"/></svg>
+          </button>
+          <div class="slider-wrap">
+            <input type="range" id="time-slider" min="0" max="0" value="0" />
+          </div>
+          <time class="date-badge" id="date-display">Loading&hellip;</time>
+        </div>
+
+        <!-- Map canvas -->
+        <div class="map-frame" id="map-container">
+          <div class="loading" id="loading">
+            <div class="ld-ring"></div>
+            <span>Loading dataset&hellip;</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="foot">
+          Data: <a href="https://github.com/owid/covid-19-data" target="_blank">OWID / WHO</a> CC BY 4.0 &middot; Boundaries: Natural Earth 110 m &middot;
+          <kbd>Space</kbd> play &middot; <kbd>&larr;</kbd><kbd>&rarr;</kbd> step &middot; Scroll to zoom &middot; Double-click to reset
+        </footer>
+      </div>
+
+      <!-- RIGHT: Ranked country list -->
+      <aside class="panel" id="ranked-panel">
+        <div class="panel-head">
+          <span class="panel-title" id="panel-title">Countries</span>
+          <span class="panel-sort" id="panel-sort">Sorted by value &darr;</span>
+        </div>
+        <div class="panel-search-wrap">
+          <input type="text" class="panel-search" id="panel-search" placeholder="Search country&hellip;" autocomplete="off" />
+        </div>
+        <div class="panel-list" id="panel-list">
+          <!-- Dynamically filled -->
+        </div>
+        <div class="panel-foot" id="panel-foot"></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
