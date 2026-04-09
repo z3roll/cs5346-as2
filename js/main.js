@@ -54,6 +54,17 @@ async function init() {
     state.isoMapping = isoMapping;
     state.dates = covidData.dates;
 
+    // Global max per metric across all weeks & countries — used as a stable
+    // denominator for the ranked-list bars so their length doesn't rescale
+    // every time the user scrubs the timeline.
+    state.globalMax = { pm: 0, raw: 0 };
+    for (const c of Object.values(covidData.countries)) {
+      for (const wk of Object.values(c.weeks || {})) {
+        if (wk.p > state.globalMax.pm) state.globalMax.pm = wk.p;
+        if (wk.r > state.globalMax.raw) state.globalMax.raw = wk.r;
+      }
+    }
+
     // Build reverse mapping: numeric -> alpha3
     state.numericToAlpha3 = {};
     for (const [a3, num] of Object.entries(isoMapping)) {
@@ -306,7 +317,10 @@ function updateRankedList() {
     ? unique.filter(r => r.name.toLowerCase().includes(query))
     : unique;
 
-  const maxVal = unique.length ? unique[0].value || 1 : 1;
+  // Use the global max across the entire dataset (not just this week) so the
+  // bar lengths stay comparable as the user scrubs through time. Color still
+  // comes from the per-week color scale, so it updates naturally.
+  const maxVal = (state.globalMax && state.globalMax[metric]) || 1;
 
   // Update panel title
   const titleEl = document.getElementById("panel-title");
