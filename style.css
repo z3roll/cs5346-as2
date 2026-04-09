@@ -317,7 +317,7 @@ input[type="range"]::-moz-range-thumb{
   color:var(--text-dim);font-variant-numeric:tabular-nums;
 }
 
-/* Size legend — reference circles */
+/* Size legend — nested concentric reference circles */
 .size-legend{
   margin-top:var(--sp-3);padding-top:var(--sp-2);
   border-top:1px solid var(--border);
@@ -326,21 +326,24 @@ input[type="range"]::-moz-range-thumb{
   font-family:var(--f-mono);font-size:.58rem;font-weight:500;
   text-transform:uppercase;letter-spacing:.08em;
   color:var(--text-dim);
-  margin-bottom:var(--sp-2);
+  margin-bottom:var(--sp-1);
 }
-.size-legend-items{
-  display:flex;align-items:flex-end;gap:var(--sp-3);
-}
-.size-legend-item{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-}
-.size-legend-item svg{display:block}
-.size-legend-item span{
-  font-family:var(--f-mono);font-size:.56rem;
-  color:var(--text-dim);font-variant-numeric:tabular-nums;
-}
+.size-legend-svg{display:block}
 .size-legend-ref{
-  fill:none;stroke:var(--text-mid);stroke-width:.9;
+  fill:none;
+  stroke:var(--text-mid);
+  stroke-width:.9;
+  opacity:.85;
+}
+.size-legend-leader{
+  stroke:var(--text-dim);
+  stroke-width:.5;
+  stroke-dasharray:1.5,1.5;
+}
+.size-legend-label{
+  font-family:var(--f-mono);font-size:.56rem;
+  fill:var(--text-dim);
+  font-variant-numeric:tabular-nums;
 }
 
 /* Bin info */

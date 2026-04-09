@@ -467,24 +467,58 @@ function updateLegend(colorScale, radiusScale, values) {
   nd.append("div").attr("class", "legend-swatch no-data-swatch");
   nd.append("span").attr("class", "legend-label").text("No data");
 
-  // Size legend — a few reference circles
+  // Size legend — nested concentric circles, all sharing the same bottom
+  // baseline (classic proportional-symbol-map convention). This signals
+  // "continuous sqrt scale with these reference points" rather than a
+  // 3-bin discrete encoding, which is what separate side-by-side circles
+  // would imply.
   const sizeLeg = leg.append("div").attr("class", "size-legend");
   sizeLeg.append("div").attr("class", "size-legend-title").text("Circle area = value");
+
   const ref = state.radiusRef[state.metric];
-  const samples = [ref * 0.05, ref * 0.25, ref];
-  const sizeItems = sizeLeg.append("div").attr("class", "size-legend-items");
+  // Five reference points spanning small → large. The top of the biggest
+  // circle defines the SVG height; everything else is stacked inside it.
+  const samples = [ref, ref * 0.5, ref * 0.2, ref * 0.05];
+
+  const pad = 4;
+  const labelX = RADIUS_MAX * 2 + 14;   // right of the biggest circle + gap
+  const svgW = labelX + 60;
+  const svgH = RADIUS_MAX * 2 + pad * 2;
+  const cx = RADIUS_MAX + pad;
+  const baseY = svgH - pad;             // shared bottom baseline
+
+  const svg = sizeLeg.append("svg")
+    .attr("class", "size-legend-svg")
+    .attr("width", svgW)
+    .attr("height", svgH);
+
+  // Circles — draw largest first so smaller ones sit visually on top.
   samples.forEach(v => {
     const r = radiusScale(v);
-    const g = sizeItems.append("div").attr("class", "size-legend-item");
-    const svg = g.append("svg")
-      .attr("width", RADIUS_MAX * 2 + 2)
-      .attr("height", RADIUS_MAX * 2 + 2);
     svg.append("circle")
-      .attr("cx", RADIUS_MAX + 1)
-      .attr("cy", RADIUS_MAX + 1)
-      .attr("r", r)
-      .attr("class", "size-legend-ref");
-    g.append("span").text(fmtShort(v));
+      .attr("class", "size-legend-ref")
+      .attr("cx", cx)
+      .attr("cy", baseY - r)
+      .attr("r", r);
+  });
+
+  // Leader lines + labels — one per sample, positioned at the top of each
+  // circle (its cy - r, which equals baseY - 2r).
+  samples.forEach(v => {
+    const r = radiusScale(v);
+    const topY = baseY - 2 * r;
+    svg.append("line")
+      .attr("class", "size-legend-leader")
+      .attr("x1", cx)
+      .attr("x2", labelX - 3)
+      .attr("y1", topY)
+      .attr("y2", topY);
+    svg.append("text")
+      .attr("class", "size-legend-label")
+      .attr("x", labelX)
+      .attr("y", topY)
+      .attr("dy", "0.32em")
+      .text(fmtShort(v));
   });
 }
 
