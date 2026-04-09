@@ -108,12 +108,19 @@ async function init() {
       state.featureById.set(String(f.id).padStart(3, "0"), f);
     });
 
-    // Radius reference: 99th-percentile value across all (country, week) for
-    // each metric. Radius is sqrt(value)-mapped with this as the upper anchor
-    // and clamped, so a handful of micro-state outliers (Saint Helena etc.)
-    // don't collapse the rest of the world to invisibility, while still
-    // showing those outliers as max-size circles. The domain is stable across
-    // time scrubbing so circle size is visually comparable week-to-week.
+    // Radius reference: 99.9th-percentile value across all (country, week)
+    // for each metric. Radius is sqrt(value)-mapped with this as the upper
+    // anchor and clamped. p999 (not p99) is important for raw mode: weekly
+    // case counts span ~6 orders of magnitude and the top 1% contains many
+    // legitimate big-country peaks (US Omicron ~5.65M, China reopening
+    // ~40M); anchoring at p99 would clamp dozens of distinct country-weeks
+    // to the same max-size circle — which is exactly what a user reading
+    // 834k vs 364k side by side would (correctly) complain about. p999
+    // keeps the tail flexible enough to differentiate mid-peak values,
+    // while still clamping the handful of true extremes so they don't
+    // collapse the rest of the world to invisibility. The domain is stable
+    // across time scrubbing so circle size is visually comparable
+    // week-to-week.
     state.radiusRef = computeRadiusRef(covidData, state.numericToAlpha3);
 
     const slider = document.getElementById("time-slider");
@@ -141,8 +148,8 @@ async function init() {
   }
 }
 
-// Collect every (country, week) value into an array, sort, return p99 for
-// both metrics. ~70k values, so fine to do at load time.
+// Collect every (country, week) value into an array, sort, return p99.9
+// for both metrics. ~40k values per metric, so fine to do at load time.
 function computeRadiusRef(covidData, numericToAlpha3) {
   const raw = [];
   const pm = [];
@@ -155,8 +162,8 @@ function computeRadiusRef(covidData, numericToAlpha3) {
   raw.sort(d3.ascending);
   pm.sort(d3.ascending);
   return {
-    raw: d3.quantileSorted(raw, 0.99) || 1,
-    pm:  d3.quantileSorted(pm,  0.99) || 1,
+    raw: d3.quantileSorted(raw, 0.999) || 1,
+    pm:  d3.quantileSorted(pm,  0.999) || 1,
   };
 }
 
