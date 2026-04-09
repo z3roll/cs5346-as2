@@ -317,10 +317,12 @@ function updateRankedList() {
     ? unique.filter(r => r.name.toLowerCase().includes(query))
     : unique;
 
-  // Use the global max across the entire dataset (not just this week) so the
-  // bar lengths stay comparable as the user scrubs through time. Color still
-  // comes from the per-week color scale, so it updates naturally.
-  const maxVal = (state.globalMax && state.globalMax[metric]) || 1;
+  // Log-scale bar width against the global max across the entire dataset.
+  // Linear mapping doesn't work: values span 6+ orders of magnitude, so a
+  // handful of outlier peaks would squash every typical country to ~0 px.
+  // Log maps 240,000 → 100% and 100 → ~40%, keeping every nonzero bar visible.
+  const globalMax = (state.globalMax && state.globalMax[metric]) || 1;
+  const logDen = Math.log(globalMax + 1) || 1;
 
   // Update panel title
   const titleEl = document.getElementById("panel-title");
@@ -335,7 +337,8 @@ function updateRankedList() {
 
   filtered.forEach((r, i) => {
     const rank = i + 1;
-    const pct = Math.min(100, ((r.value || 0) / maxVal) * 100);
+    const v = r.value || 0;
+    const pct = v > 0 ? Math.min(100, (Math.log(v + 1) / logDen) * 100) : 0;
     const valStr = metric === "pm" ? fmt(r.value, 1) : fmt(r.value);
     const barColor = state.currentColorScale ? state.currentColorScale(r.value || 0.1) : "#444";
     const hl = state.highlightedCountry === r.alpha3 ? " highlighted" : "";
