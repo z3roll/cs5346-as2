@@ -574,13 +574,17 @@ function getThresholds(colorScale, values) {
 function updateBinInfo() {
   const ct = document.getElementById("map-container");
   d3.select(ct).selectAll(".bin-info").remove();
-  const txt = {
-    quantile: "Quantile bins — equal country count per bin",
-    jenks:    "Jenks natural breaks — minimize within-bin variance",
-    equal:    "Equal-interval bins — even spacing across range",
-    owidlog:  "OWID log bins — fixed 10^n thresholds (original map)",
-  }[state.binMethod] || "";
-  d3.select(ct).append("div").attr("class", "bin-info").text(txt);
+  const info = {
+    quantile: { name: "Quantile",             desc: "equal country count per bin" },
+    jenks:    { name: "Jenks natural breaks", desc: "minimizes within-bin variance" },
+    equal:    { name: "Equal interval",       desc: "evenly splits the value range" },
+    owidlog:  { name: "OWID Log",             desc: "fixed 10ⁿ thresholds (original grapher)" },
+  }[state.binMethod];
+  if (!info) return;
+  const el = d3.select(ct).append("div").attr("class", "bin-info");
+  el.append("div").attr("class", "bin-info-label").text("BIN METHOD");
+  el.append("div").attr("class", "bin-info-name").text(info.name);
+  el.append("div").attr("class", "bin-info-desc").text(info.desc);
 }
 
 // ---------------------------------------------------------------------------
