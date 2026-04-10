@@ -483,11 +483,14 @@ function updateLegend(colorScale, radiusScale, values) {
   nd.append("span").attr("class", "legend-label").text("No data");
 
   // Size legend — horizontal row of reference circles sharing a bottom
-  // baseline. More samples (six) and tight spacing → the eye reads the
-  // progression as a continuous sqrt gradient rather than a few discrete
-  // bins. Values chosen so that radii increase roughly linearly.
+  // baseline. Size and color both encode the current metric (redundant
+  // encoding); the legend title states that explicitly so viewers don't
+  // think the two channels mean different things.
   const sizeLeg = leg.append("div").attr("class", "size-legend");
-  sizeLeg.append("div").attr("class", "size-legend-title").text("Circle area = value");
+  const sizeTitle = state.metric === "pm"
+    ? "Size + color: weekly cases / 100K"
+    : "Size + color: weekly cases";
+  sizeLeg.append("div").attr("class", "size-legend-title").text(sizeTitle);
 
   const ref = state.radiusRef[state.metric];
   // Radii step linearly from small → RADIUS_MAX. Because r = sqrt(v/ref)*Rmax,
@@ -502,8 +505,9 @@ function updateLegend(colorScale, radiusScale, values) {
 
   const padX = 4;
   const padTop = 2;
-  const padBottom = 12;   // room for labels below baseline
-  const gap = 3;           // between neighboring circles
+  const padBottom = 14;   // room for labels below baseline
+  const gap = 5;           // between neighboring circles — wider so every
+                           // circle's label has clearance
 
   // Compute total width = sum of diameters + gaps + side padding.
   let totalDia = 0;
@@ -532,10 +536,9 @@ function updateLegend(colorScale, radiusScale, values) {
     cursor += 2 * r + gap;
   });
 
-  // Labels below — show every other circle (1st, 3rd, 5th) to reduce clutter
-  // while still giving the viewer 3 anchor values along the continuous scale.
+  // Labels below — one per circle. All six are labeled so the legend
+  // reads as a continuous scale with a value attached to every anchor.
   samples.forEach((v, i) => {
-    if (i % 2 !== 0) return;
     svg.append("text")
       .attr("class", "size-legend-label")
       .attr("x", circleCenters[i])
