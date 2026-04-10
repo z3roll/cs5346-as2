@@ -71,9 +71,11 @@ const PLAY_SPEED_MS = 200;
 // render as a clearly visible dot — at 1.8 px, low-end circles vanished
 // into the map background, so any positive value now gets at least a
 // 3 px radius (6 px diameter) to remain distinguishable from a pixel
-// artefact.
+// artefact. RADIUS_MAX is generous so the biggest country of any given
+// week has strong visual presence — at 26 px the top circles still
+// looked understated next to the legend and controls.
 const RADIUS_MIN = 3;
-const RADIUS_MAX = 26;
+const RADIUS_MAX = 32;
 
 // OWID-style "manual" log thresholds — the actual config we pulled from
 // the grapher page. Raw uses the literal OWID breaks; per-100k uses the
