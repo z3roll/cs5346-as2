@@ -272,6 +272,16 @@ input[type="range"]::-moz-range-thumb{
   fill-opacity:1;
   filter:drop-shadow(0 0 6px var(--amber-glow));
 }
+/* Sticky selection — set by clicking a rank-list row. Stays on after the
+   cursor moves away, so the viewer can still find the target circle after
+   the camera has finished flying to it. Cyan-ish to distinguish from the
+   transient amber hover highlight. */
+.symbol-layer circle.symbol.selected{
+  stroke:var(--cyan);
+  stroke-width:2.2;
+  fill-opacity:1;
+  filter:drop-shadow(0 0 10px rgba(34,211,238,.55));
+}
 
 .graticule{
   fill:none;stroke:rgba(255,255,255,.04);
@@ -457,6 +467,10 @@ input[type="range"]::-moz-range-thumb{
 }
 .rank-row:hover{background:var(--surface-up)}
 .rank-row.highlighted{background:var(--amber-dim)}
+.rank-row.selected{
+  background:var(--cyan-dim);
+  box-shadow:inset 2px 0 0 var(--cyan);
+}
 
 /* Background bar — OWID-style full-row indicator behind the text */
 .rank-bar{

@@ -51,7 +51,13 @@ const state = {
   isoMapping: null,
   dates: [],
   geoFeatures: null,
-  highlightedCountry: null,
+  highlightedCountry: null,    // transient (hover) highlight — cleared on mouseleave
+  selectedCountry: null,        // sticky (click) highlight — persists until another click
+                                // or zoom reset. When the user clicks a country in the
+                                // ranked list, the map animates a zoom to it and
+                                // selectedCountry keeps the amber stroke visible so the
+                                // target circle can still be identified among its
+                                // neighbours after zoom.
   searchQuery: "",
 };
 
@@ -247,9 +253,40 @@ function buildMap() {
   svg.call(zoom);
   svg.on("dblclick.zoom", () => {
     svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    clearSelection();
   });
 
   state.mapGroup = g;
+  state.zoom = zoom;
+}
+
+// ---------------------------------------------------------------------------
+// Fly-to-country — triggered by clicking a row in the ranked list. With 150+
+// circles on the map at peak weeks, the clicked country can be anywhere in a
+// dense cluster; a smooth camera move + sticky highlight lets the viewer
+// visually anchor to the target without hunting for it.
+// ---------------------------------------------------------------------------
+function zoomToCountry(alpha3) {
+  if (!state.zoom || !state.svg) return;
+  const paddedId = state.alpha3ToNumeric[alpha3];
+  if (!paddedId) return;
+  const feat = state.featureById.get(paddedId);
+  if (!feat) return;
+  const cent = state.centroids.get(feat.id);
+  if (!cent) return;
+
+  const [cx, cy] = cent;
+  const scale = 5;
+  const tx = state.width  / 2 - cx * scale;
+  const ty = state.height / 2 - cy * scale;
+
+  // Sticky-select first so the amber stroke appears immediately and remains
+  // visible after the zoom animation ends.
+  selectCountry(alpha3);
+
+  state.svg.transition()
+    .duration(750)
+    .call(state.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
 }
 
 // ---------------------------------------------------------------------------
@@ -654,30 +691,55 @@ function updateRankedList() {
   list.querySelectorAll(".rank-row").forEach(row => {
     row.addEventListener("mouseenter", () => highlightCountry(row.dataset.a3));
     row.addEventListener("mouseleave", () => clearHighlight());
+    row.addEventListener("click", () => zoomToCountry(row.dataset.a3));
   });
 }
 
 // ---------------------------------------------------------------------------
 // Linked Highlighting
+//
+// Two parallel states:
+//   - highlightedCountry: transient, set by hover, cleared by mouseleave
+//   - selectedCountry:    sticky,    set by click,  cleared by zoom-reset
+// The DOM classes are the union of the two so a clicked country stays amber
+// even after the mouse leaves, but hovering a *different* country still
+// shows the hover highlight on top (the hover target and the selection are
+// both marked, making it visible which one was selected earlier).
 // ---------------------------------------------------------------------------
+function applyHighlightClasses() {
+  const sticky = state.selectedCountry;
+  const transient = state.highlightedCountry;
+  const isActive = a3 => !!a3 && (a3 === sticky || a3 === transient);
+
+  if (state.symbolLayer) {
+    state.symbolLayer.selectAll("circle.symbol")
+      .classed("highlighted", d => isActive(d && d.entry && d.entry.alpha3))
+      .classed("selected",    d => !!sticky && d && d.entry && d.entry.alpha3 === sticky);
+  }
+  document.querySelectorAll(".rank-row").forEach(row => {
+    row.classList.toggle("highlighted", isActive(row.dataset.a3));
+    row.classList.toggle("selected",    !!sticky && row.dataset.a3 === sticky);
+  });
+}
+
 function highlightCountry(alpha3) {
   state.highlightedCountry = alpha3;
-
-  state.symbolLayer.selectAll("circle.symbol")
-    .classed("highlighted", d => d && d.entry && d.entry.alpha3 === alpha3);
-
-  document.querySelectorAll(".rank-row").forEach(row => {
-    row.classList.toggle("highlighted", row.dataset.a3 === alpha3);
-  });
+  applyHighlightClasses();
 }
 
 function clearHighlight() {
   state.highlightedCountry = null;
-  if (state.symbolLayer) {
-    state.symbolLayer.selectAll("circle.symbol").classed("highlighted", false);
-  }
-  document.querySelectorAll(".rank-row.highlighted")
-    .forEach(r => r.classList.remove("highlighted"));
+  applyHighlightClasses();
+}
+
+function selectCountry(alpha3) {
+  state.selectedCountry = alpha3;
+  applyHighlightClasses();
+}
+
+function clearSelection() {
+  state.selectedCountry = null;
+  applyHighlightClasses();
 }
 
 // ---------------------------------------------------------------------------
