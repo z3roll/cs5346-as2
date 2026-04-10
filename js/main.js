@@ -36,7 +36,13 @@
 // ---------------------------------------------------------------------------
 const state = {
   metric: "pm",            // "pm" = per-100k  |  "raw" = raw counts
-  binMethod: "quantile",   // "quantile" | "jenks" | "equal" | "owidlog"
+  binMethod: "jenks",      // "quantile" | "jenks" | "equal" | "owidlog"
+                            // Default is Jenks natural breaks: weekly COVID
+                            // data is heavily right-skewed (a few countries
+                            // carry the bulk of cases), so a Quantile default
+                            // would compress the whole top tail into one bin
+                            // — Jenks minimizes within-bin variance and gives
+                            // the high end visible differentiation.
   weekIndex: 0,
   playing: false,
   playInterval: null,
@@ -58,11 +64,13 @@ const ZERO_COLOR = "#2a2518";
 const PLAY_SPEED_MS = 200;
 
 // Symbol radius bounds in pixels (area-proportional via sqrt scale).
-// Upper bound kept modest so dense regions (Europe) stay readable without
-// requiring aggressive force-collide relaxation that would displace circles
-// away from their true geographic positions.
-const RADIUS_MIN = 1.0;
-const RADIUS_MAX = 18;
+// With the p99.9 anchor, mid-distribution values compress toward the
+// bottom of the scale, so the upper bound has to be generous enough for
+// them to stay readable without the biggest countries blowing past the
+// map. RADIUS_MIN is non-zero so genuinely small values remain visible
+// as a dot rather than vanishing into the noise.
+const RADIUS_MIN = 1.8;
+const RADIUS_MAX = 26;
 
 // OWID-style "manual" log thresholds — the actual config we pulled from
 // the grapher page. Raw uses the literal OWID breaks; per-100k uses the
