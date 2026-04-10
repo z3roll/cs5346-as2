@@ -67,9 +67,12 @@ const PLAY_SPEED_MS = 200;
 // With the p99.9 anchor, mid-distribution values compress toward the
 // bottom of the scale, so the upper bound has to be generous enough for
 // them to stay readable without the biggest countries blowing past the
-// map. RADIUS_MIN is non-zero so genuinely small values remain visible
-// as a dot rather than vanishing into the noise.
-const RADIUS_MIN = 1.8;
+// map. RADIUS_MIN is set well above 1 so genuinely small values still
+// render as a clearly visible dot — at 1.8 px, low-end circles vanished
+// into the map background, so any positive value now gets at least a
+// 3 px radius (6 px diameter) to remain distinguishable from a pixel
+// artefact.
+const RADIUS_MIN = 3;
 const RADIUS_MAX = 26;
 
 // OWID-style "manual" log thresholds — the actual config we pulled from
