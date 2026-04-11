@@ -59,6 +59,15 @@ const state = {
                                 // target circle can still be identified among its
                                 // neighbours after zoom.
   searchQuery: "",
+  currentZoomScale: 1,          // Tracks the active d3.zoom scale so circles can be
+                                // counter-scaled to maintain a constant screen-pixel
+                                // size. At zoom=5 the map group is drawn 5x larger,
+                                // so each circle's `r` attribute is divided by 5 to
+                                // keep its visual size identical to the global view.
+                                // This is the standard "locked screen-size symbol"
+                                // technique used by interactive web maps so that
+                                // dense clusters of symbols naturally separate as
+                                // the user zooms in.
 };
 
 // ---------------------------------------------------------------------------
@@ -247,9 +256,24 @@ function buildMap() {
   }
 
   // Zoom & pan
+  //
+  // While zooming, the map group's transform scales both country outlines
+  // and circles, which makes the European cluster even worse at zoom=5.
+  // To counter that, we capture the current zoom scale in state and
+  // recompute every circle's `r` attribute as baseRadius / k on each zoom
+  // tick. That holds circles at a constant screen-pixel size so the space
+  // between country centroids grows with zoom while the symbols don't —
+  // dense clusters naturally separate as the user zooms in.
   const zoom = d3.zoom()
     .scaleExtent([1, 12])
-    .on("zoom", (event) => { g.attr("transform", event.transform); });
+    .on("zoom", (event) => {
+      g.attr("transform", event.transform);
+      state.currentZoomScale = event.transform.k;
+      if (state.symbolLayer && state.currentRadiusScale) {
+        state.symbolLayer.selectAll("circle.symbol")
+          .attr("r", d => resolvedRadius(d.entry.value));
+      }
+    });
   svg.call(zoom);
   svg.on("dblclick.zoom", () => { resetView(); });
 
@@ -298,6 +322,16 @@ function resetView() {
   clearSelection();
 }
 
+// Resolve a value → on-screen pixel radius, counter-scaled by the current
+// zoom so circles keep a constant visual size at any zoom level.
+// Called both from the zoom handler (every frame while zooming) and from
+// updateMap() (when the user changes metric / bin / week).
+function resolvedRadius(v) {
+  if (v == null || v <= 0) return 0;
+  if (!state.currentRadiusScale) return 0;
+  return state.currentRadiusScale(v) / (state.currentZoomScale || 1);
+}
+
 // ---------------------------------------------------------------------------
 // Map Update
 // ---------------------------------------------------------------------------
@@ -344,6 +378,10 @@ function updateMap() {
   rows.sort((a, b) => (b.entry.value || 0) - (a.entry.value || 0));
   rows.forEach(d => { d.x = d.cx; d.y = d.cy; });
 
+  // Publish the new radius scale to state BEFORE the data-join so
+  // `resolvedRadius()` (called by the .attr("r", ...) below) can read it.
+  state.currentRadiusScale = radiusScale;
+
   // Data-join on the symbol layer
   const sel = state.symbolLayer.selectAll("circle.symbol")
     .data(rows, d => d.entry.alpha3);
@@ -360,11 +398,7 @@ function updateMap() {
   enter.merge(sel)
     .attr("cx", d => d.x)
     .attr("cy", d => d.y)
-    .attr("r", d => {
-      const v = d.entry.value;
-      if (v == null || v <= 0) return 0;   // suppress no-data / zero
-      return radiusScale(v);
-    })
+    .attr("r", d => resolvedRadius(d.entry.value))
     .attr("fill", d => {
       const v = d.entry.value;
       if (v == null) return "none";
