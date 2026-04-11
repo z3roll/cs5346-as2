@@ -818,26 +818,92 @@ function clearSelection() {
 function onSymbolHover(event, d) {
   const entry = d.entry;
   const tt = document.getElementById("tooltip");
-  const active = state.metric === "pm" ? "pm" : "raw";
+  const active = state.metric;   // "pm" | "raw"
+  const dateDisplay = state.dates[state.weekIndex].display;
+  const country = state.covidData.countries[entry.alpha3];
+
+  // Sparkline data — the whole time series for this country in the active
+  // metric. OWID's map tooltip shows a history strip so the viewer can see
+  // whether the current week is a peak, a trough, or a steady state; we
+  // replicate that so hovering a circle gives you temporal context, not
+  // just a single value.
+  const spark = buildSparkline(country, active);
+
+  const primaryLabel = active === "pm" ? "per 100k" : "weekly cases";
+  const primaryValue = active === "pm" ? fmt(entry.pm, 1) : fmt(entry.raw);
+  const secondaryLabel = active === "pm" ? "weekly cases" : "per 100k";
+  const secondaryValue = active === "pm" ? fmt(entry.raw) : fmt(entry.pm, 1);
 
   tt.innerHTML = `
-    <div class="country-name">${entry.name}</div>
-    <div class="metric-row">
-      <span class="metric-label">Per 100k:</span>
-      <span class="metric-value ${active==='pm'?'primary':''}">${fmt(entry.pm, 1)}</span>
+    <div class="tt-head">
+      <div class="tt-country">${entry.name}</div>
+      <div class="tt-date">${dateDisplay}</div>
     </div>
-    <div class="metric-row">
-      <span class="metric-label">Weekly cases:</span>
-      <span class="metric-value ${active==='raw'?'primary':''}">${fmt(entry.raw)}</span>
+    <div class="tt-primary">
+      <div class="tt-primary-label">${primaryLabel}</div>
+      <div class="tt-primary-value">${primaryValue}</div>
     </div>
-    <div class="metric-row">
-      <span class="metric-label">Population:</span>
-      <span class="metric-value">${fmt(entry.pop)}</span>
+    ${spark}
+    <div class="tt-more">
+      <div class="tt-more-row"><span>${secondaryLabel}</span><span>${secondaryValue}</span></div>
+      <div class="tt-more-row"><span>population</span><span>${fmt(entry.pop)}</span></div>
     </div>`;
 
   highlightCountry(entry.alpha3);
   tt.classList.add("visible");
   positionTooltip(event);
+}
+
+// Build the sparkline SVG markup for a country's full time series. Returns
+// an HTML string ready to drop into the tooltip innerHTML.
+function buildSparkline(country, metric) {
+  const dates = state.dates;
+  const n = dates.length;
+  if (!country || !country.weeks || n < 2) return "";
+
+  const values = new Array(n);
+  let maxV = 0;
+  for (let i = 0; i < n; i++) {
+    const w = country.weeks[dates[i].key];
+    const v = w ? (metric === "pm" ? w.p : w.r) : 0;
+    values[i] = v || 0;
+    if (values[i] > maxV) maxV = values[i];
+  }
+  if (maxV <= 0) maxV = 1;   // avoid div-by-zero; flat-zero countries still render a baseline
+
+  const W = 240;
+  const H = 58;
+  const PL = 6, PR = 40, PT = 10, PB = 18;   // extra right-pad for max label, bottom for dates
+  const innerW = W - PL - PR;
+  const innerH = H - PT - PB;
+  const x = i => PL + (n === 1 ? 0 : (i / (n - 1)) * innerW);
+  const y = v => PT + innerH - (v / maxV) * innerH;
+
+  // Line+area path. Using straight segments; 320 points is plenty dense
+  // that smoothing would just round off real peaks.
+  let d = `M${x(0)},${H - PB}`;
+  for (let i = 0; i < n; i++) d += `L${x(i).toFixed(1)},${y(values[i]).toFixed(1)}`;
+  d += `L${x(n - 1)},${H - PB}Z`;
+
+  // Current-week cursor + dot
+  const idx = Math.max(0, Math.min(n - 1, state.weekIndex));
+  const cx = x(idx);
+  const cy = y(values[idx]);
+
+  const startLabel = dates[0].display;
+  const endLabel = dates[n - 1].display;
+
+  return `
+    <svg class="tt-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <line class="tt-spark-topline" x1="${PL}" x2="${PL + innerW}" y1="${PT}" y2="${PT}" />
+      <text class="tt-spark-max" x="${PL + innerW + 3}" y="${PT + 3}">${fmtShort(maxV)}</text>
+      <text class="tt-spark-zero" x="${PL + innerW + 3}" y="${H - PB + 1}">0</text>
+      <path class="tt-spark-fill" d="${d}" />
+      <line class="tt-spark-cursor" x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${PT}" y2="${H - PB}" />
+      <circle class="tt-spark-dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" />
+      <text class="tt-spark-start" x="${PL}" y="${H - 3}">${startLabel}</text>
+      <text class="tt-spark-end" x="${PL + innerW}" y="${H - 3}">${endLabel}</text>
+    </svg>`;
 }
 
 function onSymbolMove(event) { positionTooltip(event); }

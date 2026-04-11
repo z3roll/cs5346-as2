@@ -531,29 +531,104 @@ input[type="range"]::-moz-range-thumb{
    ======================================================================= */
 .tooltip{
   position:fixed;pointer-events:none;z-index:10000;
-  background:rgba(20,22,30,.95);
+  background:rgba(20,22,30,.96);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:1px solid var(--border-hi);
   color:var(--text);
-  padding:var(--sp-3) var(--sp-4);
+  padding:10px 12px 8px;
   border-radius:var(--radius);
-  font-size:.75rem;line-height:1.55;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  font-size:.75rem;line-height:1.45;
+  box-shadow:0 8px 32px rgba(0,0,0,.55);
   opacity:0;transform:translateY(6px);
   transition:opacity .12s,transform .12s;
-  max-width:260px;
+  width:264px;
 }
 .tooltip.visible{opacity:1;transform:translateY(0)}
 
-.tooltip .country-name{
-  font-family:var(--f-display);font-weight:600;
-  font-size:.9rem;margin-bottom:6px;color:#fff;
+.tooltip .tt-head{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding-bottom:6px;margin-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.tooltip .tt-country{
+  font-family:var(--f-display);font-weight:700;
+  font-size:.92rem;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tooltip .tt-date{
+  font-family:var(--f-mono);font-size:.62rem;
+  color:var(--text-dim);white-space:nowrap;
 }
 
-.tooltip .metric-row{display:flex;justify-content:space-between;gap:14px}
-.tooltip .metric-label{color:var(--text-dim);font-size:.68rem}
-.tooltip .metric-value{font-family:var(--f-mono);font-weight:600;font-variant-numeric:tabular-nums}
-.tooltip .metric-value.primary{color:var(--amber)}
+.tooltip .tt-primary{
+  margin-bottom:4px;
+}
+.tooltip .tt-primary-label{
+  font-family:var(--f-mono);font-size:.6rem;
+  color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;
+}
+.tooltip .tt-primary-value{
+  font-family:var(--f-mono);font-weight:700;
+  font-size:1.25rem;color:var(--amber);
+  font-variant-numeric:tabular-nums;
+  line-height:1.1;
+}
+
+/* Sparkline — full-history strip with current-week cursor */
+.tooltip .tt-spark{
+  display:block;margin:2px 0 2px;
+}
+.tooltip .tt-spark-fill{
+  fill:var(--amber);
+  fill-opacity:.28;
+  stroke:var(--amber);
+  stroke-width:1.1;
+  stroke-linejoin:round;
+}
+.tooltip .tt-spark-topline{
+  stroke:rgba(255,255,255,.12);
+  stroke-width:.6;
+  stroke-dasharray:2,3;
+}
+.tooltip .tt-spark-cursor{
+  stroke:var(--amber);
+  stroke-width:1;
+  stroke-opacity:.7;
+}
+.tooltip .tt-spark-dot{
+  fill:var(--amber);
+  stroke:#fff;
+  stroke-width:1;
+}
+.tooltip .tt-spark-max,
+.tooltip .tt-spark-zero{
+  font-family:var(--f-mono);font-size:8px;
+  fill:var(--text-dim);font-style:italic;
+  dominant-baseline:middle;
+}
+.tooltip .tt-spark-start,
+.tooltip .tt-spark-end{
+  font-family:var(--f-mono);font-size:8.5px;
+  fill:var(--text-dim);
+}
+.tooltip .tt-spark-end{text-anchor:end}
+
+/* Secondary metric list */
+.tooltip .tt-more{
+  margin-top:4px;padding-top:6px;
+  border-top:1px solid var(--border);
+}
+.tooltip .tt-more-row{
+  display:flex;justify-content:space-between;gap:14px;
+  font-size:.68rem;
+}
+.tooltip .tt-more-row > span:first-child{
+  color:var(--text-dim);text-transform:lowercase;
+}
+.tooltip .tt-more-row > span:last-child{
+  font-family:var(--f-mono);font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
 
 /* =======================================================================
    LOADING
