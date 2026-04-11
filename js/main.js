@@ -251,10 +251,7 @@ function buildMap() {
     .scaleExtent([1, 12])
     .on("zoom", (event) => { g.attr("transform", event.transform); });
   svg.call(zoom);
-  svg.on("dblclick.zoom", () => {
-    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-    clearSelection();
-  });
+  svg.on("dblclick.zoom", () => { resetView(); });
 
   state.mapGroup = g;
   state.zoom = zoom;
@@ -287,6 +284,18 @@ function zoomToCountry(alpha3) {
   state.svg.transition()
     .duration(750)
     .call(state.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+// Reset both the camera and the sticky selection. Used by double-click on
+// the map and by clicking an already-selected country in the ranked list
+// (toggle-off behavior).
+function resetView() {
+  if (state.svg && state.zoom) {
+    state.svg.transition()
+      .duration(500)
+      .call(state.zoom.transform, d3.zoomIdentity);
+  }
+  clearSelection();
 }
 
 // ---------------------------------------------------------------------------
@@ -691,7 +700,17 @@ function updateRankedList() {
   list.querySelectorAll(".rank-row").forEach(row => {
     row.addEventListener("mouseenter", () => highlightCountry(row.dataset.a3));
     row.addEventListener("mouseleave", () => clearHighlight());
-    row.addEventListener("click", () => zoomToCountry(row.dataset.a3));
+    row.addEventListener("click", () => {
+      const a3 = row.dataset.a3;
+      // Clicking the already-selected row toggles off — fly the camera back
+      // to the world view and unfade every other circle. Clicking a
+      // different country just re-targets.
+      if (state.selectedCountry === a3) {
+        resetView();
+      } else {
+        zoomToCountry(a3);
+      }
+    });
   });
 }
 
