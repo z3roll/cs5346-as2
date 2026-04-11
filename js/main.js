@@ -712,9 +712,22 @@ function applyHighlightClasses() {
   const isActive = a3 => !!a3 && (a3 === sticky || a3 === transient);
 
   if (state.symbolLayer) {
+    // `has-selection` is a layer-level modifier the CSS uses to fade every
+    // non-target circle back when a sticky selection is active, so the
+    // clicked country stops fighting with its neighbours for attention.
+    state.symbolLayer.classed("has-selection", !!sticky);
+
     state.symbolLayer.selectAll("circle.symbol")
       .classed("highlighted", d => isActive(d && d.entry && d.entry.alpha3))
       .classed("selected",    d => !!sticky && d && d.entry && d.entry.alpha3 === sticky);
+
+    // Raise the selected circle to the top of the paint order — SVG has
+    // no z-index, so the last sibling wins. Without this the selected
+    // country can sit *behind* a larger neighbour (e.g. clicking Iceland
+    // leaves it obscured by the big Europe cluster).
+    if (sticky) {
+      state.symbolLayer.selectAll("circle.symbol.selected").raise();
+    }
   }
   document.querySelectorAll(".rank-row").forEach(row => {
     row.classList.toggle("highlighted", isActive(row.dataset.a3));

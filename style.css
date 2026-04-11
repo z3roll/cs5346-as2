@@ -283,6 +283,15 @@ input[type="range"]::-moz-range-thumb{
   filter:drop-shadow(0 0 10px rgba(34,211,238,.55));
 }
 
+/* When a sticky selection exists, every unrelated circle fades back so
+   the target stops competing with its neighbours for attention. The
+   selected circle, any currently-hovered circle, and any transiently
+   highlighted circle (.highlighted) all keep their normal rendering. */
+.symbol-layer.has-selection circle.symbol:not(.selected):not(.highlighted):not(:hover){
+  fill-opacity:.14;
+  stroke-opacity:.2;
+}
+
 .graticule{
   fill:none;stroke:rgba(255,255,255,.04);
   stroke-width:.25;stroke-dasharray:2,4;
