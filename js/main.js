@@ -390,11 +390,11 @@ function updateMap() {
 
   const enter = sel.enter().append("circle")
     .attr("class", "symbol")
-    .attr("data-a3", d => d.entry.alpha3)
-    .on("mouseover", onSymbolHover)
-    .on("mousemove", onSymbolMove)
-    .on("mouseout", onSymbolOut);
+    .attr("data-a3", d => d.entry.alpha3);
 
+  // Attach event handlers on the merged selection so existing circles
+  // also get them refreshed every updateMap — `.on()` is idempotent in
+  // d3 (replaces any prior binding for the same event type).
   enter.merge(sel)
     .attr("cx", d => d.x)
     .attr("cy", d => d.y)
@@ -404,7 +404,11 @@ function updateMap() {
       if (v == null) return "none";
       if (v === 0) return "none";
       return colorScale(v);
-    });
+    })
+    .on("mouseover", onSymbolHover)
+    .on("mousemove", onSymbolMove)
+    .on("mouseout", onSymbolOut)
+    .on("click", onSymbolClick);
 
   state.currentCountryValues = cv;
   state.currentColorScale = colorScale;
@@ -841,6 +845,23 @@ function onSymbolMove(event) { positionTooltip(event); }
 function onSymbolOut() {
   document.getElementById("tooltip").classList.remove("visible");
   clearHighlight();
+}
+
+// Click a circle → same toggle semantics as clicking the matching ranked
+// list row. First click flies to the country and pins the selection;
+// clicking the already-selected circle resets the camera.
+function onSymbolClick(event, d) {
+  const a3 = d && d.entry && d.entry.alpha3;
+  if (!a3) return;
+  // Stop the click from bubbling to the svg and let the circle's own
+  // dblclick-to-reset still work — we don't handle dblclick explicitly,
+  // d3.zoom's `dblclick.zoom` listener on the svg handles that.
+  event.stopPropagation();
+  if (state.selectedCountry === a3) {
+    resetView();
+  } else {
+    zoomToCountry(a3);
+  }
 }
 
 function positionTooltip(event) {
